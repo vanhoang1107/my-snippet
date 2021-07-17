@@ -1,0 +1,127 @@
+version: "3"
+services:
+  zk1:
+    image: confluentinc/cp-zookeeper:6.1.1
+    volumes:
+      - /data/kafka/zk1/data/:/var/lib/zookeeper/data/:Z
+      - /data/kafka/zk1/log/:/var/lib/zookeeper/log/:Z
+    environment:
+      ZOOKEEPER_SERVER_ID: 1
+      ZOOKEEPER_CLIENT_PORT: 22181
+      ZOOKEEPER_TICK_TIME: 2000
+      ZOOKEEPER_INIT_LIMIT: 5
+      ZOOKEEPER_SYNC_LIMIT: 2
+      ZOOKEEPER_SERVERS: zk1:22888:23888;zk2:32888:33888;zk3:42888:43888
+  zk2:
+    image: confluentinc/cp-zookeeper:6.1.1
+    volumes:
+      - /data/kafka/zk2/data/:/var/lib/zookeeper/data/:Z
+      - /data/kafka/zk2/log/:/var/lib/zookeeper/log/:Z
+    environment:
+      ZOOKEEPER_SERVER_ID: 2
+      ZOOKEEPER_CLIENT_PORT: 32181
+      ZOOKEEPER_TICK_TIME: 2000
+      ZOOKEEPER_INIT_LIMIT: 5
+      ZOOKEEPER_SYNC_LIMIT: 2
+      ZOOKEEPER_SERVERS: zk1:22888:23888;zk2:32888:33888;zk3:42888:43888
+  zk3:
+    image: confluentinc/cp-zookeeper:6.1.1
+    volumes:
+      - /data/kafka/zk3/data/:/var/lib/zookeeper/data/:Z
+      - /data/kafka/zk3/log/:/var/lib/zookeeper/log/:Z
+    environment:
+      ZOOKEEPER_SERVER_ID: 2
+      ZOOKEEPER_CLIENT_PORT: 42181
+      ZOOKEEPER_TICK_TIME: 2000
+      ZOOKEEPER_INIT_LIMIT: 5
+      ZOOKEEPER_SYNC_LIMIT: 2
+      ZOOKEEPER_SERVERS: zk1:22888:23888;zk2:32888:33888;zk3:42888:43888
+
+  kafka1:
+    image: confluentinc/cp-kafka:6.1.1
+    ports:
+      - 19091:19091
+    depends_on:
+      - zk1
+      - zk2
+      - zk3
+    volumes:
+      - /data/kafka/kafka1/data/:/var/lib/kafka/data/:Z
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: zk1:22181,zk2:32181,zk3:42181
+      KAFKA_LISTENERS: LISTENER_INTERNAL://kafka1:19092,LISTENER_EXTERNAL://kafka1:19091
+      KAFKA_ADVERTISED_LISTENERS: LISTENER_INTERNAL://kafka1:19092,LISTENER_EXTERNAL://<my-external-ip>:19091
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: LISTENER_INTERNAL:PLAINTEXT,LISTENER_EXTERNAL:PLAINTEXT
+      KAFKA_INTER_BROKER_LISTENER_NAME: LISTENER_INTERNAL
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: "false"
+      KAFKA_LOG_RETENTION_MS: 604800000
+      KAFKA_LOG_RETENTION_BYTES: 1073741824
+      KAFKA_LOG4J_ROOT_LOGLEVEL: INFO
+    #   KAFKA_CONFLUENT_BALANCER_TOPIC_REPLICATION_FACTOR: 1
+    #   KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+    #   KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+    #   KAFKA_METRIC_REPORTERS: io.confluent.metrics.reporter.ConfluentMetricsReporter
+    #   CONFLUENT_METRICS_ENABLE: "true"
+    #   CONFLUENT_METRICS_REPORTER_BOOTSTRAP_SERVERS: control-center:9092
+    #   CONFLUENT_METRICS_REPORTER_TOPIC_REPLICAS: 1
+  kafka2:
+    image: confluentinc/cp-kafka:6.1.1
+    ports:
+      - 29091:29091
+    depends_on:
+      - zk1
+      - zk2
+      - zk3
+    volumes:
+      - /data/kafka/kafka2/data/:/var/lib/kafka/data/:Z
+    environment:
+      KAFKA_BROKER_ID: 2
+      KAFKA_ZOOKEEPER_CONNECT: zk1:22181,zk2:32181,zk3:42181
+      KAFKA_LISTENERS: LISTENER_INTERNAL://kafka2:29092,LISTENER_EXTERNAL://kafka2:29091
+      KAFKA_ADVERTISED_LISTENERS: LISTENER_INTERNAL://kafka2:29092,LISTENER_EXTERNAL://<my-external-ip>:29091
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: LISTENER_INTERNAL:PLAINTEXT,LISTENER_EXTERNAL:PLAINTEXT
+      KAFKA_INTER_BROKER_LISTENER_NAME: LISTENER_INTERNAL
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: "false"
+      KAFKA_LOG_RETENTION_MS: 604800000
+      KAFKA_LOG_RETENTION_BYTES: 1073741824
+      KAFKA_LOG4J_ROOT_LOGLEVEL: INFO
+  kafka3:
+    image: confluentinc/cp-kafka:6.1.1
+    ports:
+      - 39091:39091
+    depends_on:
+      - zk1
+      - zk2
+      - zk3
+    volumes:
+      - /data/kafka/kafka3/data/:/var/lib/kafka/data/:Z
+    environment:
+      KAFKA_BROKER_ID: 3
+      KAFKA_ZOOKEEPER_CONNECT: zk1:22181,zk2:32181,zk3:42181
+      KAFKA_LISTENERS: LISTENER_INTERNAL://kafka3:39092,LISTENER_EXTERNAL://kafka3:39091
+      KAFKA_ADVERTISED_LISTENERS: LISTENER_INTERNAL://kafka3:39092,LISTENER_EXTERNAL://<my-external-ip>:39091
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: LISTENER_INTERNAL:PLAINTEXT,LISTENER_EXTERNAL:PLAINTEXT
+      KAFKA_INTER_BROKER_LISTENER_NAME: LISTENER_INTERNAL
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: "false"
+      KAFKA_LOG_RETENTION_MS: 604800000
+      KAFKA_LOG_RETENTION_BYTES: 1073741824
+      KAFKA_LOG4J_ROOT_LOGLEVEL: INFO
+
+  control-center:
+    image: confluentinc/cp-enterprise-control-center:6.1.1
+    ports:
+    - 127.0.0.1:10806:9021
+    depends_on:
+    - kafka1
+    volumes:
+    - /data/kafka/control-center/data/:/var/lib/confluent-control-center/:Z
+    ulimits:
+      nofile:
+        soft: 16384
+        hard: 16384
+    environment:
+      PORT: 9021
+      CONTROL_CENTER_BOOTSTRAP_SERVERS: kafka1:19092,kafka2:29092,kafka3:39092
+      # CONTROL_CENTER_REPLICATION_FACTOR: 1
+      # CONFLUENT_METRICS_TOPIC_REPLICATION: 1
