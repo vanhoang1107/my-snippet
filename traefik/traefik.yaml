@@ -1,0 +1,44 @@
+global:
+  checkNewVersion: true
+  sendAnonymousUsage: true
+api:
+  dashboard: false
+log:
+  level: WARN
+  format: common
+accessLog:
+  format: common
+metrics:
+  prometheus:
+    buckets:
+      - 1
+      - 3
+      - 5
+serversTransport:
+  maxIdleConnsPerHost: 16
+  forwardingTimeouts:
+    dialTimeout: 2
+    responseHeaderTimeout: 30
+    idleConnTimeout: 90
+
+entryPoints:
+  web:
+    address: :80
+    proxyProtocol:
+      trustedips:
+        - 127.0.0.1
+    forwardedHeaders:
+      trustedips:
+        - 127.0.0.1
+    transport:
+      lifeCycle:
+        requestAcceptGraceTimeout: 1
+        graceTimeOut: 3
+providers:
+  docker:
+    watch: true
+    exposedByDefault: false
+    swarmMode: true
+    network: web
+    swarmModeRefreshSeconds: 15
+    httpClientTimeout: 30

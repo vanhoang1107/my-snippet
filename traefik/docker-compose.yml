@@ -1,0 +1,45 @@
+version: '3.5'
+services:
+  proxy:
+    image: traefik
+    ports:
+      - target: 80
+        published: 8080
+        protocol: tcp
+    deploy:
+      replicas: 2
+      update_config:
+        parallelism: 1
+        delay: 1s
+        order: start-first
+      placement:
+        constraints:
+          - node.role == manager
+      restart_policy:
+        condition: on-failure
+      labels:
+        traefik.enable: "true"
+        traefik.http.routers.traefik-staging.rule: Host(`traefik.local`)
+        traefik.http.routers.traefik-staging.entrypoints: web
+        traefik.http.services.traefik-staging.loadbalancer.server.port: 8080
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:Z
+      - /opt/traefik/traefik.yaml:/etc/traefik/traefik.yaml
+    networks:
+      - web
+
+#  whoami:
+#    image: traefik/whoami
+#    deploy:
+#      labels:
+#        traefik.enable: "true"
+#        traefik.docker.network: web
+#        traefik.http.routers.whoami.rule: Host(`whoami.local`)
+#        traefik.http.routers.whoami.entrypoints: web
+#        traefik.http.services.whoami.loadbalancer.server.port: 80
+#    networks:
+#      - web
+
+networks:
+  web:
+    external: true
