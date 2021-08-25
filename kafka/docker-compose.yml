@@ -1,127 +1,195 @@
-version: "3"
+version: '3.5'
 services:
   zk1:
-    image: confluentinc/cp-zookeeper:6.1.1
-    volumes:
-      - /data/kafka/zk1/data/:/var/lib/zookeeper/data/:Z
-      - /data/kafka/zk1/log/:/var/lib/zookeeper/log/:Z
+    image: confluentinc/cp-zookeeper:6.2.0
+    hostname: "{{.Node.Hostname}}.{{.Service.Name}}.{{.Task.Slot}}"
+    env_file: zookeeper.env
     environment:
       ZOOKEEPER_SERVER_ID: 1
-      ZOOKEEPER_CLIENT_PORT: 22181
-      ZOOKEEPER_TICK_TIME: 2000
-      ZOOKEEPER_INIT_LIMIT: 5
-      ZOOKEEPER_SYNC_LIMIT: 2
-      ZOOKEEPER_SERVERS: zk1:22888:23888;zk2:32888:33888;zk3:42888:43888
+      ZOOKEEPER_SERVERS: 0.0.0.0:2888:3888;zk2:2888:3888;zk3:2888:3888
+    deploy:
+      replicas: 1
+      update_config:
+        order: stop-first
+      placement:
+        constraints:
+          - node.labels.alias == main
+      restart_policy:
+        condition: any
+    networks:
+      - kafka
+    volumes:
+      - /data/kafka/zk/:/var/lib/zookeeper/data/:Z
+      - /var/log/kafka/zk/:/var/lib/zookeeper/log/:Z
+
   zk2:
-    image: confluentinc/cp-zookeeper:6.1.1
-    volumes:
-      - /data/kafka/zk2/data/:/var/lib/zookeeper/data/:Z
-      - /data/kafka/zk2/log/:/var/lib/zookeeper/log/:Z
+    image: confluentinc/cp-zookeeper:6.2.0
+    hostname: "{{.Node.Hostname}}.{{.Service.Name}}.{{.Task.Slot}}"
+    env_file: zookeeper.env
     environment:
       ZOOKEEPER_SERVER_ID: 2
-      ZOOKEEPER_CLIENT_PORT: 32181
-      ZOOKEEPER_TICK_TIME: 2000
-      ZOOKEEPER_INIT_LIMIT: 5
-      ZOOKEEPER_SYNC_LIMIT: 2
-      ZOOKEEPER_SERVERS: zk1:22888:23888;zk2:32888:33888;zk3:42888:43888
+      ZOOKEEPER_SERVERS: zk1:2888:3888;0.0.0.0:2888:3888;zk3:2888:3888
+    deploy:
+      replicas: 1
+      update_config:
+        order: stop-first
+      placement:
+        constraints:
+          - node.labels.alias == app1
+      restart_policy:
+        condition: any
+    networks:
+      - kafka
+    volumes:
+      - /data/kafka/zk/:/var/lib/zookeeper/data/:Z
+      - /var/log/kafka/zk/:/var/lib/zookeeper/log/:Z
+
   zk3:
-    image: confluentinc/cp-zookeeper:6.1.1
-    volumes:
-      - /data/kafka/zk3/data/:/var/lib/zookeeper/data/:Z
-      - /data/kafka/zk3/log/:/var/lib/zookeeper/log/:Z
+    image: confluentinc/cp-zookeeper:6.2.0
+    hostname: "{{.Node.Hostname}}.{{.Service.Name}}.{{.Task.Slot}}"
+    env_file: zookeeper.env
     environment:
-      ZOOKEEPER_SERVER_ID: 2
-      ZOOKEEPER_CLIENT_PORT: 42181
-      ZOOKEEPER_TICK_TIME: 2000
-      ZOOKEEPER_INIT_LIMIT: 5
-      ZOOKEEPER_SYNC_LIMIT: 2
-      ZOOKEEPER_SERVERS: zk1:22888:23888;zk2:32888:33888;zk3:42888:43888
+      ZOOKEEPER_SERVER_ID: 3
+      ZOOKEEPER_SERVERS: zk1:2888:3888;zk2:2888:3888;0.0.0.0:2888:3888
+    deploy:
+      replicas: 1
+      update_config:
+        order: stop-first
+      placement:
+        constraints:
+          - node.labels.alias == app2
+      restart_policy:
+        condition: any
+    networks:
+      - kafka
+    volumes:
+      - /data/kafka/zk/:/var/lib/zookeeper/data/:Z
+      - /var/log/kafka/zk/:/var/lib/zookeeper/log/:Z
 
   kafka1:
-    image: confluentinc/cp-kafka:6.1.1
-    ports:
-      - 19091:19091
+    image: confluentinc/cp-kafka:6.2.0
+    hostname: "{{.Node.Hostname}}.{{.Service.Name}}.{{.Task.Slot}}"
     depends_on:
       - zk1
       - zk2
       - zk3
-    volumes:
-      - /data/kafka/kafka1/data/:/var/lib/kafka/data/:Z
+    env_file: broker.env
     environment:
       KAFKA_BROKER_ID: 1
-      KAFKA_ZOOKEEPER_CONNECT: zk1:22181,zk2:32181,zk3:42181
-      KAFKA_LISTENERS: LISTENER_INTERNAL://kafka1:19092,LISTENER_EXTERNAL://kafka1:19091
-      KAFKA_ADVERTISED_LISTENERS: LISTENER_INTERNAL://kafka1:19092,LISTENER_EXTERNAL://<my-external-ip>:19091
-      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: LISTENER_INTERNAL:PLAINTEXT,LISTENER_EXTERNAL:PLAINTEXT
-      KAFKA_INTER_BROKER_LISTENER_NAME: LISTENER_INTERNAL
-      KAFKA_AUTO_CREATE_TOPICS_ENABLE: "false"
-      KAFKA_LOG_RETENTION_MS: 604800000
-      KAFKA_LOG_RETENTION_BYTES: 1073741824
-      KAFKA_LOG4J_ROOT_LOGLEVEL: INFO
-    #   KAFKA_CONFLUENT_BALANCER_TOPIC_REPLICATION_FACTOR: 1
-    #   KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
-    #   KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
-    #   KAFKA_METRIC_REPORTERS: io.confluent.metrics.reporter.ConfluentMetricsReporter
-    #   CONFLUENT_METRICS_ENABLE: "true"
-    #   CONFLUENT_METRICS_REPORTER_BOOTSTRAP_SERVERS: control-center:9092
-    #   CONFLUENT_METRICS_REPORTER_TOPIC_REPLICAS: 1
+      KAFKA_ZOOKEEPER_CONNECT: zk1:2181,zk2:2181,zk3:2181
+      KAFKA_LISTENERS: LISTENER_INTERNAL://0.0.0.0:9092,LISTENER_EXTERNAL://0.0.0.0:9091
+      KAFKA_ADVERTISED_LISTENERS: LISTENER_INTERNAL://kafka1:9092,LISTENER_EXTERNAL://kafka1:9091
+    deploy:
+      replicas: 1
+      update_config:
+        order: stop-first
+      placement:
+        constraints:
+          - node.labels.alias == main
+      restart_policy:
+        condition: any
+    networks:
+      - kafka
+      - my-app
+    volumes:
+      - /data/kafka/kafka/:/var/lib/kafka/:Z
+
   kafka2:
-    image: confluentinc/cp-kafka:6.1.1
-    ports:
-      - 29091:29091
+    image: confluentinc/cp-kafka:6.2.0
+    hostname: "{{.Node.Hostname}}.{{.Service.Name}}.{{.Task.Slot}}"
     depends_on:
       - zk1
       - zk2
       - zk3
-    volumes:
-      - /data/kafka/kafka2/data/:/var/lib/kafka/data/:Z
+    env_file: broker.env
     environment:
       KAFKA_BROKER_ID: 2
-      KAFKA_ZOOKEEPER_CONNECT: zk1:22181,zk2:32181,zk3:42181
-      KAFKA_LISTENERS: LISTENER_INTERNAL://kafka2:29092,LISTENER_EXTERNAL://kafka2:29091
-      KAFKA_ADVERTISED_LISTENERS: LISTENER_INTERNAL://kafka2:29092,LISTENER_EXTERNAL://<my-external-ip>:29091
-      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: LISTENER_INTERNAL:PLAINTEXT,LISTENER_EXTERNAL:PLAINTEXT
-      KAFKA_INTER_BROKER_LISTENER_NAME: LISTENER_INTERNAL
-      KAFKA_AUTO_CREATE_TOPICS_ENABLE: "false"
-      KAFKA_LOG_RETENTION_MS: 604800000
-      KAFKA_LOG_RETENTION_BYTES: 1073741824
-      KAFKA_LOG4J_ROOT_LOGLEVEL: INFO
+      KAFKA_ZOOKEEPER_CONNECT: zk1:2181,zk2:2181,zk3:2181
+      KAFKA_LISTENERS: LISTENER_INTERNAL://0.0.0.0:9092,LISTENER_EXTERNAL://0.0.0.0:9091
+      KAFKA_ADVERTISED_LISTENERS: LISTENER_INTERNAL://kafka2:9092,LISTENER_EXTERNAL://kafka2:9091
+    deploy:
+      replicas: 1
+      update_config:
+        order: stop-first
+      placement:
+        constraints:
+          - node.labels.alias == app1
+      restart_policy:
+        condition: any
+    networks:
+      - kafka
+      - my-app
+    volumes:
+      - /data/kafka/kafka/:/var/lib/kafka/:Z
+
   kafka3:
-    image: confluentinc/cp-kafka:6.1.1
-    ports:
-      - 39091:39091
+    image: confluentinc/cp-kafka:6.2.0
+    hostname: "{{.Node.Hostname}}.{{.Service.Name}}.{{.Task.Slot}}"
     depends_on:
       - zk1
       - zk2
       - zk3
-    volumes:
-      - /data/kafka/kafka3/data/:/var/lib/kafka/data/:Z
+    env_file: broker.env
     environment:
       KAFKA_BROKER_ID: 3
-      KAFKA_ZOOKEEPER_CONNECT: zk1:22181,zk2:32181,zk3:42181
-      KAFKA_LISTENERS: LISTENER_INTERNAL://kafka3:39092,LISTENER_EXTERNAL://kafka3:39091
-      KAFKA_ADVERTISED_LISTENERS: LISTENER_INTERNAL://kafka3:39092,LISTENER_EXTERNAL://<my-external-ip>:39091
-      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: LISTENER_INTERNAL:PLAINTEXT,LISTENER_EXTERNAL:PLAINTEXT
-      KAFKA_INTER_BROKER_LISTENER_NAME: LISTENER_INTERNAL
-      KAFKA_AUTO_CREATE_TOPICS_ENABLE: "false"
-      KAFKA_LOG_RETENTION_MS: 604800000
-      KAFKA_LOG_RETENTION_BYTES: 1073741824
-      KAFKA_LOG4J_ROOT_LOGLEVEL: INFO
+      KAFKA_ZOOKEEPER_CONNECT: zk1:2181,zk2:2181,zk3:2181
+      KAFKA_LISTENERS: LISTENER_INTERNAL://0.0.0.0:9092,LISTENER_EXTERNAL://0.0.0.0:9091
+      KAFKA_ADVERTISED_LISTENERS: LISTENER_INTERNAL://kafka3:9092,LISTENER_EXTERNAL://kafka3:9091
+    deploy:
+      replicas: 1
+      update_config:
+        order: stop-first
+      placement:
+        constraints:
+          - node.labels.alias == app2
+      restart_policy:
+        condition: any
+    networks:
+      - kafka
+      - my-app
+    volumes:
+      - /data/kafka/kafka/:/var/lib/kafka/:Z
 
   control-center:
-    image: confluentinc/cp-enterprise-control-center:6.1.1
-    ports:
-    - 127.0.0.1:10806:9021
+    image: confluentinc/cp-enterprise-control-center:6.2.0
     depends_on:
-    - kafka1
-    volumes:
-    - /data/kafka/control-center/data/:/var/lib/confluent-control-center/:Z
+      - kafka1
+      - kafka2
+      - kafka3
+    environment:
+      PORT: 9021
+      CONTROL_CENTER_BOOTSTRAP_SERVERS: kafka1:9092,kafka2:9092,kafka3:9092
+      CONTROL_CENTER_REPLICATION_FACTOR: 3
+      CONFLUENT_METRICS_TOPIC_REPLICATION: 3
+    deploy:
+      replicas: 1
+      update_config:
+        order: stop-first
+      placement:
+        constraints:
+          - node.labels.alias == main
+      restart_policy:
+        condition: any
+      labels:
+        traefik.enable: "true"
+        traefik.docker.network: web
+        traefik.http.routers.kafka-ui.rule: Host(`kafka-ui.my-app.local`)
+        traefik.http.routers.kafka-ui.entrypoints: web
+        traefik.http.services.kafka-ui.loadbalancer.server.port: 9021
     ulimits:
       nofile:
         soft: 16384
         hard: 16384
-    environment:
-      PORT: 9021
-      CONTROL_CENTER_BOOTSTRAP_SERVERS: kafka1:19092,kafka2:29092,kafka3:39092
-      # CONTROL_CENTER_REPLICATION_FACTOR: 1
-      # CONFLUENT_METRICS_TOPIC_REPLICATION: 1
+    networks:
+      - kafka
+      - web
+    volumes:
+      - /data/kafka/control-center/:/var/lib/confluent-control-center/:Z
+
+networks:
+  kafka:
+    external: true
+  web:
+    external: true
+  my-app:
+    external: true
