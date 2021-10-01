@@ -28,8 +28,7 @@ entryPoints:
       trustedips:
         - 127.0.0.1
     forwardedHeaders:
-      trustedips:
-        - 127.0.0.1
+      insecure: true
     transport:
       lifeCycle:
         requestAcceptGraceTimeout: 1
