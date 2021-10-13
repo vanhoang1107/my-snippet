@@ -24,9 +24,9 @@ serversTransport:
 entryPoints:
   web:
     address: :80
-    proxyProtocol:
-      trustedips:
-        - 127.0.0.1
+    # proxyProtocol:
+    #   trustedips:
+    #     - 127.0.0.1
     forwardedHeaders:
       insecure: true
     transport:
