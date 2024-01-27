@@ -1,0 +1,14 @@
+{
+    "live-restore": false,
+    "insecure-registries": ["registry.docker.local:5000"],
+    "metrics-addr": "0.0.0.0:9323",
+    "experimental": true,
+    "features": {
+        "buildkit": true
+    },
+    "log-driver": "json-file",
+    "log-opts": {
+        "max-size": "100m",
+        "max-file": "3"
+    }
+}

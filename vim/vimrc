@@ -1,0 +1,14 @@
+"" General
+set nowrap             " Wrap lines
+set textwidth=100      " Line wrap (number of cols)
+set showmatch          " Highlight matching brace
+"
+set hlsearch           " Highlight all search results
+"
+set autoindent         " Auto-indent new lines
+set tabstop=4
+set shiftwidth=4       " Number of auto-indent spaces
+set smartindent        " Enable smart-indent
+set expandtab
+set paste
+set softtabstop=4      " Number of spaces per Tab
