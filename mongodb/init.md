@@ -1,8 +1,8 @@
 # Create User
 ```js
-{
-    user: "project_live_admin_svc",
+db.createUser({
+    user: "PROJECT_live_play_svc",
     pwd:  passwordPrompt(),
-    roles: [{ role: "readWrite", db: "project_play" } ]
-}
+    roles: [{ role: "readWrite", db: "PROJECT_play" } ]
+})
 ```
